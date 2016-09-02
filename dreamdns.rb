@@ -5,8 +5,8 @@ require 'logger'
 require 'net/http'
 require 'uri'
 
-KEY = ENV['DREAMHOST_API_KEY']
-DNS_RECORD = ENV['DREAMHOST_DNS_RECORD']
+KEY = ENV['DREAMHOST_API_KEY'] || raise('Missing env DREAMHOST_API_KEY')
+DNS_RECORD = ENV['DREAMHOST_DNS_RECORD'] || raise('Missing env DREAMHOST_DNS_RECORD')
 LOGGER = Logger.new(STDOUT)
 
 def update_loop
@@ -41,6 +41,7 @@ def get_dns_ip
   response = request(list_uri)
 
   if response['result'] != 'success'
+    puts JSON.pretty_generate(response)
     raise "Dreamhost API failure: #{response['result']}"
   end
 
@@ -73,7 +74,7 @@ def ip_uri
 end
 
 def list_uri
-  dh_uri('dns-list_records')
+  URI("https://api.dreamhost.com/?key=#{KEY}&cmd=dns-list_records&format=json")
 end
 
 def add_uri(ip)
@@ -84,8 +85,4 @@ def remove_uri(ip)
   URI("https://api.dreamhost.com/?key=#{KEY}&cmd=dns-remove_record&record=#{DNS_RECORD}&type=A&value=#{ip}&format=json")
 end
 
-def dh_uri(cmd, key = KEY)
-  URI("https://api.dreamhost.com/?key=#{KEY}&cmd=#{cmd}&format=json")
-end
-
-update_loop
+update_loop if __FILE__ == $0
